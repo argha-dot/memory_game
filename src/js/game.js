@@ -231,6 +231,7 @@ function hitRateMonitor(prevHR, curHR) {
   // else if (curHR > 0.7) {
   //   alpha = 1.5;
   // }
+
   noteSpeed = Math.floor(noteSpeed - ((0.7 - curHR) * alpha))
   noteGenerateLag = Math.floor(noteGenerateLag + ((0.7 - curHR) * 25))
 
