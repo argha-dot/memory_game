@@ -238,9 +238,20 @@ function setup() {
     isGameOver = true;
   };
 
-  keyInputs.forEach((key, i) => {
+  keyInputs.forEach((key, i, arr) => {
     key.press = () => {
-      frets[i].isPressed = true;
+      let isOtherDown = false;
+
+      arr.filter((oKey) => oKey !== key).forEach((otherKey) => {
+        if (otherKey.isDown) {
+          isOtherDown = true;
+        }
+      })
+
+      if (!isOtherDown) {
+        frets[i].isPressed = true;
+      }
+
     };
     key.release = () => {
       frets[i].isPressed = false;
