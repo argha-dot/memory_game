@@ -3,12 +3,15 @@ import { Application, Container, Graphics, Sprite, Texture } from "pixi.js";
 
 import * as lib from "../lib/lib";
 
+
 let loader = PIXI.Loader.shared;
 
 let type = "WebGL";
 if (!PIXI.utils.isWebGLSupported()) {
   type = "canvas";
 }
+
+
 
 PIXI.utils.sayHello(type);
 
@@ -24,18 +27,19 @@ let app = new Application({
   height: DIMENSIONS.height,
   resolution: 1,
 });
-
+app.ticker.maxFPS = 60;
 // document.querySelector("#main").appendChild(app.view);
 
 loader.load(setup);
 
 let state, gameScene, gameBg, isPaused;
 let gameOverBg, gameOverText, gameOverScene, restartButton, restart;
-let scoreScene, scoreText, missText, hitText, scoreBg;
+let scoreScene, scoreText, missText, hitText, streakText, scoreBg;
 let numberOfNotes, noteSpeed, noteGenerateLag, timer;
 let frets, keyInputs, notes;
 
 let hits = 0;
+let streak = 0;
 let misses = 0;
 let hitRate = 0;
 let prevHitRate = 0;
@@ -59,7 +63,7 @@ const setPassSequence = (seq) => {
   for (let i = 0; i < numberOfLevels - 1; i++) {
     sequence = [...sequence, ...lib.subBlockGen(passSequence)];
   }
-  console.log(sequence);
+  // console.log(sequence);
   // sequence = passSequence
 }
 
@@ -92,18 +96,20 @@ function setup() {
   scoreScene.position.set(DIMENSIONS.gameWidth, 0);
 
   // Score Text
-  scoreText = lib.createText(`score: ${hits}`, { fill: "black" }, scoreScene);
+  scoreText = lib.createText(`Score: 0`, { fill: "black" }, scoreScene);
   scoreText.position.set(scoreBg.width / 2 - scoreText.width / 2, 50);
 
-  missText = lib.createText(`misses: ${misses}`, { fill: "black" }, scoreScene);
-  missText.position.set(scoreBg.width / 2 - missText.width / 2, 100);
+  // missText = lib.createText(`Misses: ${misses}`, { fill: "black" }, scoreScene);
+  // missText.position.set(scoreBg.width / 2 - missText.width / 2, 100);
 
-  hitText = lib.createText(
-    `${hitRate.toPrecision(3)}`,
-    { fill: "black" },
-    scoreScene
-  );
-  hitText.position.set(scoreBg.width / 2 - hitText.width / 2, 150);
+  streakText = lib.createText(`Streak: 0`, { fill: "black" }, scoreScene);
+  streakText.position.set(scoreBg.width / 2 - streakText.width / 2, 100);
+  // hitText = lib.createText(
+  //   `${hitRate.toPrecision(3)}`,
+  //   { fill: "black" },
+  //   scoreScene
+  // );
+  // hitText.position.set(scoreBg.width / 2 - hitText.width / 2, 150);
 
   // Game Over
   gameOverBg = new Sprite(Texture.WHITE);
@@ -113,23 +119,29 @@ function setup() {
   gameOverBg.tint = 0xffffff;
 
   restartButton = new Sprite(Texture.WHITE);
-  restartButton.width = 25;
-  restartButton.height = 25;
-  restartButton.position.set(0, 0);
-  restartButton.tint = 0x000000;
-  restartButton.interactive = true;
+  const restartText = new PIXI.Text("Continue", { fill: "#000000" })
   restartButton.on("mouseup", () => {
     restart = true;
   });
+  restartButton.width = 150;
+  restartButton.height = restartText.height;
+  let restartX = DIMENSIONS.gameWidth / 2 - (0.5 * restartButton.width);
+  let restartY = DIMENSIONS.height / 2 + 50;
+  let restartTextX = DIMENSIONS.gameWidth / 2 - (0.5 * restartText.width);
+  restartButton.position.set(restartX, restartY);
+  restartText.position.set(restartTextX, restartY);
+  restartButton.tint = 0x666666;
+  restartButton.interactive = true;
+
 
   gameOverScene.addChild(gameOverBg);
-  gameOverScene.addChild(restartButton);
+  gameOverScene.addChild(restartButton, restartText);
 
   gameOverScene.visible = false;
 
   // Game Over Text
   gameOverText = lib.createText(
-    `GAME ${gameNumber} FINISHED, Take 20 seconds`,
+    `Level ${gameNumber}/7 Complete, Take a short break.`,
     {
       fill: "black",
       // fontFamily: "pixel, sans-serif",
@@ -147,9 +159,7 @@ function setup() {
   gameBg.height = DIMENSIONS.height;
   gameBg.position.set(0, 0);
   gameBg.tint = 0xffffff;
-
   gameScene.addChild(gameBg);
-
   // The distance between each pole is 70, there are 8 such poles, hence 7 spaces,
   // therefore total width between the first and last pole will be 7 * 70 = 490.
   // Total width of the gameScene is 600, hence there is a whitespace of 110 on both sides.
@@ -178,7 +188,6 @@ function setup() {
 
   // Frets
   frets = [];
-
   for (let i = 0; i < 7; i++) {
     let offsetX = 60;
     let gap = 70;
@@ -194,12 +203,10 @@ function setup() {
 
     fret.position.set(offsetX + i * gap, DIMENSIONS.height - 80);
     frets.push({ fret: fret, isPressed: false });
-
     gameScene.addChild(fret);
   }
 
   let letters = "SDFJKL";
-
   for (let i = 0; i < 6; i++) {
     let letter = lib.createText(
       `${letters[i]}`,
@@ -234,9 +241,9 @@ function setup() {
     isPaused = !isPaused;
   };
 
-  esc.press = () => {
-    isGameOver = true;
-  };
+  // esc.press = () => {
+  //   isGameOver = true;
+  // };
 
   keyInputs.forEach((key, i, arr) => {
     key.press = () => {
@@ -258,15 +265,32 @@ function setup() {
     };
   });
 
+  // window.addEventListener('keydown', onKeyDown)
+  // window.addEventListener('keyup', onKeyUp)
+
+  // let pressKeys = [83, 68, 70, 74, 75, 76]
+
+  // function onKeyDown(key) {
+  //   let index = pressKeys.indexOf(key.keyCode)
+  //   let othersPressed = false;
+  //   for (let j = 1; j < pressKeys.length; j++) {
+  //     if (frets[(index + j) % pressKeys.length].isPressed) {
+  //       othersPressed = true;
+  //     }
+  //   }
+  //   if (!othersPressed) {
+  //     frets[index].isPressed = true;
+  //   }
+  // }
+  // function onKeyUp(key) {
+  //   let index = pressKeys.indexOf(key.keyCode)
+  //   frets[index].isPressed = false;
+  // }
+
   // Notes
   numberOfNotes = 0;
   noteSpeed = 5;
   notes = [];
-
-  // for (let i = 0; i < numberOfNotes; i++) {
-  //   generateNote(-1);
-  // }
-
   noteGenerateLag = 50;
   timer = 1;
 
@@ -280,7 +304,7 @@ function noteSequence() {
   } else {
     if (sequence)
 
-    generateNote(obj[sequence[indexForNotes]]);
+      generateNote(obj[sequence[indexForNotes]]);
     indexForNotes++;
   }
 }
@@ -323,18 +347,19 @@ function gameLoop(delta) {
   state(delta);
 }
 
-function hitRateMonitor(prevHR, curHR) {
-  console.log("hitRate:", curHR.toPrecision(3), prevHR.toPrecision(3), "speed:", noteSpeed.toPrecision(3));
+function hitRateMonitor(curHR) {
+  // console.log("hitRate:", curHR.toPrecision(3), prevHR.toPrecision(3), "speed:", noteSpeed.toPrecision(3));
   let alpha = 10;
+  let beta = 25;
 
   noteSpeed = Math.floor(noteSpeed - ((0.7 - curHR) * alpha))
-  noteGenerateLag = Math.floor(noteGenerateLag + ((0.7 - curHR) * 25))
+  noteGenerateLag = Math.floor(noteGenerateLag + ((0.7 - curHR) * beta))
 
   if (noteSpeed < 3) {
     noteSpeed = 3;
   }
-  else if (noteSpeed > 15) {
-    noteSpeed = 15;
+  else if (noteSpeed > 12) {
+    noteSpeed = 12;
   }
   //changing noteGenerateLag
   if (noteGenerateLag > 55) {
@@ -343,8 +368,8 @@ function hitRateMonitor(prevHR, curHR) {
   else if (noteGenerateLag < 20) {
     noteGenerateLag = 20;
   }
-  console.log(noteSpeed);
-  console.log(noteGenerateLag);
+  // console.log(noteSpeed);
+  // console.log(noteGenerateLag);
 }
 
 function collisionCheck(fret, note) {
@@ -376,8 +401,7 @@ function play(delta) {
       noteCounter % 20 === 0 &&
       noteCounter !== 0
     ) {
-      console.log("counter: ", noteCounter);
-      hitRateMonitor(prevHitRate, hitRate);
+      hitRateMonitor(hitRate);
       notes.forEach((note) => {
         note.vy = noteSpeed;
       });
@@ -403,7 +427,6 @@ function play(delta) {
       }
     });
 
-    prevHitRate = hitRate;
     prevNoteCounter = noteCounter;
 
     // For each note check if it is colliding with any fret.
@@ -422,10 +445,11 @@ function play(delta) {
             note.clear();
             object.splice(index, 1);
             hits += 1;
-
+            streak += 1;
             hitRate = hits / (hits + misses);
-            scoreText.text = `score: ${hits}`;
-            hitText.text = `${hitRate.toPrecision(3)}`;
+            scoreText.text = `Score: ${hits}`;
+            streakText.text = `Streak: ${streak}`;
+            // hitText.text = `${hitRate.toPrecision(3)}`;
             noteCounter++;
 
             // This subtracts the time when the user presses the corresponding fret to 
@@ -440,9 +464,10 @@ function play(delta) {
         note.clear();
         object.splice(index, 1);
         misses += 1;
+        streak = 0;
         hitRate = hits / (hits + misses);
-        missText.text = `misses: ${misses}`;
-        hitText.text = `${hitRate.toPrecision(3)}`;
+        streakText.text = `Streak: ${streak}`;
+        // hitText.text = `${hitRate.toPrecision(3)}`;
         noteCounter++;
       }
     });
@@ -450,7 +475,6 @@ function play(delta) {
   } else {
     gameBg.tint = 0x333333;
   }
-
   if (isGameOver) {
     gameNumber += 1;
     console.log(gameNumber);
@@ -463,8 +487,8 @@ function end(delta) {
   gameOverScene.visible = true;
   gameOverText.text =
     gameNumber <= totalGameNumber
-      ? `GAME ${gameNumber - 1} FINISHED, Take 20 seconds`
-      : `GAMES FINISHED, Press "Finish Session"`;
+      ? `GAME ${gameNumber - 1}/7 Finished. Take a short break!`
+      : `All Games Finished! Press "Finish Session". `;
 
   notes.forEach((note) => {
     note.clear();
@@ -474,7 +498,7 @@ function end(delta) {
 
   if (restart) {
     if (gameNumber > totalGameNumber) {
-      gameOverText.text = `You want to play more?`
+      gameOverText.text = `You are all done, come back next week!`
     } else {
       prevHitRate = 0;
       prevNoteCounter = 0;
@@ -484,7 +508,6 @@ function end(delta) {
       noteSpeed = 5;
       sequence = [];
       setPassSequence(passSequence);
-
       isGameOver = false;
       restart = false;
       isPaused = true;
@@ -492,6 +515,7 @@ function end(delta) {
     }
   }
 }
+
 
 export {
   hits,
@@ -501,6 +525,6 @@ export {
   reactionTimes,
   setPassSequence,
   gameNumber,
-  totalGameNumber,
+  totalGameNumber
 };
 export default app;

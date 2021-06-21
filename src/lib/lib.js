@@ -63,6 +63,8 @@ function keyboard(keyCode) {
   key.isUp = true;
   key.press = undefined;
   key.release = undefined;
+  key.othersPressed = false;
+
 
   key.downHandler = (e) => {
     if (e.keyCode === key.code) {
@@ -239,6 +241,7 @@ function subBlockGen(passSeq) {
 }
 
 
+
 export {
   createCircle,
   rectCollisionCheck,
@@ -249,5 +252,6 @@ export {
   getDistance,
   circleCollisionBounce,
   createText,
-  subBlockGen
+  subBlockGen,
+
 };
