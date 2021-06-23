@@ -1,17 +1,20 @@
 import * as PIXI from "pixi.js";
 import { Application, Container, Graphics, Sprite, Texture } from "pixi.js";
+import { Howl, Howler } from "howler";
 
 import * as lib from "../lib/lib";
 
+import noiseSound from "../assets/noise.mp3";
+import slSound from "../assets/sl.mp3";
+import dkSound from "../assets/dk.mp3";
+import fjSound from "../assets/fj.mp3";
 
-let loader = PIXI.Loader.shared;
+// let loader = PIXI.Loader.shared;
 
 let type = "WebGL";
 if (!PIXI.utils.isWebGLSupported()) {
   type = "canvas";
 }
-
-
 
 PIXI.utils.sayHello(type);
 
@@ -30,7 +33,35 @@ let app = new Application({
 app.ticker.maxFPS = 60;
 // document.querySelector("#main").appendChild(app.view);
 
-loader.load(setup);
+app.loader.add("../assets/dirt.png");
+app.loader.load(setup);
+
+let noise = new Howl({
+  src: [noiseSound],
+  loop: true,
+  volume: 0.2,
+  onloaderror: (s, e) => {
+    console.log(`sound: ${s}, ${e}`);
+  },
+  onplayerror: () => {
+    console.log("object1");
+  },
+});
+
+let fretSounds = {
+  sl: new Howl({
+    src: [slSound],
+    volume: 0.7,
+  }),
+  dk: new Howl({
+    src: [dkSound],
+    volume: 0.7,
+  }),
+  fj: new Howl({
+    src: [fjSound],
+    volume: 0.7,
+  }),
+};
 
 let state, gameScene, gameBg, isPaused;
 let gameOverBg, gameOverText, gameOverScene, restartButton, restart;
@@ -53,21 +84,21 @@ let totalGameNumber = 7;
 let gameNumber;
 
 let indexForNotes = 0;
-let obj = { "S": 0, "D": 1, "F": 2, "J": 4, "K": 5, "L": 6 };  // Note to integer conversion
+let obj = { S: 0, D: 1, F: 2, J: 4, K: 5, L: 6 }; // Note to integer conversion
 let passSequence = []; // Password sequence for the current user.
 let sequence;
 
 const setPassSequence = (seq) => {
   passSequence = seq;
-  sequence = lib.subBlockGen(passSequence)
+  sequence = lib.subBlockGen(passSequence);
   for (let i = 0; i < numberOfLevels - 1; i++) {
     sequence = [...sequence, ...lib.subBlockGen(passSequence)];
   }
   // console.log(sequence);
   // sequence = passSequence
-}
+};
 
-function setup() {
+function setup(loader, resources) {
   isPaused = true;
   restart = false;
   isGameOver = false;
@@ -119,20 +150,19 @@ function setup() {
   gameOverBg.tint = 0xffffff;
 
   restartButton = new Sprite(Texture.WHITE);
-  const restartText = new PIXI.Text("Continue", { fill: "#000000" })
+  const restartText = new PIXI.Text("Continue", { fill: "#000000" });
   restartButton.on("mouseup", () => {
     restart = true;
   });
   restartButton.width = 150;
   restartButton.height = restartText.height;
-  let restartX = DIMENSIONS.gameWidth / 2 - (0.5 * restartButton.width);
+  let restartX = DIMENSIONS.gameWidth / 2 - 0.5 * restartButton.width;
   let restartY = DIMENSIONS.height / 2 + 50;
-  let restartTextX = DIMENSIONS.gameWidth / 2 - (0.5 * restartText.width);
+  let restartTextX = DIMENSIONS.gameWidth / 2 - 0.5 * restartText.width;
   restartButton.position.set(restartX, restartY);
   restartText.position.set(restartTextX, restartY);
   restartButton.tint = 0x666666;
   restartButton.interactive = true;
-
 
   gameOverScene.addChild(gameOverBg);
   gameOverScene.addChild(restartButton, restartText);
@@ -239,26 +269,56 @@ function setup() {
 
   space.press = () => {
     isPaused = !isPaused;
+
+    if (!isPaused) {
+      noise.play();
+    } else {
+      noise.pause();
+    }
   };
 
-  // esc.press = () => {
-  //   isGameOver = true;
-  // };
+  esc.press = () => {
+    isGameOver = true;
+  };
 
   keyInputs.forEach((key, i, arr) => {
     key.press = () => {
       let isOtherDown = false;
 
-      arr.filter((oKey) => oKey !== key).forEach((otherKey) => {
-        if (otherKey.isDown) {
-          isOtherDown = true;
-        }
-      })
+      arr
+        .filter((oKey) => oKey !== key)
+        .forEach((otherKey) => {
+          if (otherKey.isDown) {
+            isOtherDown = true;
+          }
+        });
 
       if (!isOtherDown) {
         frets[i].isPressed = true;
+        switch (i) {
+          case 0:
+            fretSounds.sl.play();
+            break;
+          case 1:
+            fretSounds.dk.play();
+            break;
+          case 2:
+            fretSounds.fj.play();
+            break;
+          case 3:
+            fretSounds.fj.play();
+            break;
+          case 4:
+            fretSounds.dk.play();
+            break;
+          case 5:
+            fretSounds.sl.play();
+            break;
+          default:
+            fretSounds.sl.play();
+            break;
+        }
       }
-
     };
     key.release = () => {
       frets[i].isPressed = false;
@@ -302,9 +362,7 @@ function noteSequence() {
   if (indexForNotes > sequence.length - 1) {
     // sequence = lib.subBlockGen(passSequence);
   } else {
-    if (sequence)
-
-      generateNote(obj[sequence[indexForNotes]]);
+    if (sequence) generateNote(obj[sequence[indexForNotes]]);
     indexForNotes++;
   }
 }
@@ -336,6 +394,10 @@ function generateNote(n) {
 
   circle.tint = 0x000000;
   circle["isInsideFretTime"] = 0;
+  circle["colorChange"] = false;
+
+  circle["colorChangeTime"] = 5;
+  circle["colorTimer"] = 1;
 
   notes.push(circle);
   // console.log(circle);
@@ -352,20 +414,18 @@ function hitRateMonitor(curHR) {
   let alpha = 10;
   let beta = 25;
 
-  noteSpeed = Math.floor(noteSpeed - ((0.7 - curHR) * alpha))
-  noteGenerateLag = Math.floor(noteGenerateLag + ((0.7 - curHR) * beta))
+  noteSpeed = Math.floor(noteSpeed - (0.7 - curHR) * alpha);
+  noteGenerateLag = Math.floor(noteGenerateLag + (0.7 - curHR) * beta);
 
   if (noteSpeed < 3) {
     noteSpeed = 3;
-  }
-  else if (noteSpeed > 12) {
+  } else if (noteSpeed > 12) {
     noteSpeed = 12;
   }
   //changing noteGenerateLag
   if (noteGenerateLag > 55) {
     noteGenerateLag = 55;
-  }
-  else if (noteGenerateLag < 20) {
+  } else if (noteGenerateLag < 20) {
     noteGenerateLag = 20;
   }
   // console.log(noteSpeed);
@@ -389,7 +449,6 @@ function play(delta) {
   gameOverScene.visible = false;
 
   if (!isPaused) {
-
     if (indexForNotes > sequence.length - 1 && notes.length === 0) {
       if (timer === 0) {
         isGameOver = true;
@@ -433,9 +492,21 @@ function play(delta) {
     notes.forEach((note, index, object) => {
       note.y += note.vy * delta;
 
+      note.colorTimer =
+        note.colorTimer > 0 ? --note.colorTimer : note.colorChangeTime;
+
+      if (note.colorTimer === 0) {
+        note.colorChange = !note.colorChange;
+      }
+
+      if (note.colorChange) {
+        note.tint = 0xffffff;
+      } else {
+        note.tint = 0x000000;
+      }
+
       frets.forEach((fret) => {
         if (collisionCheck(fret, note)) {
-
           // The reaction time, this is the epoch time when note enters the fret
           if (!note.isInsideFretTime) {
             note.isInsideFretTime = new Date().valueOf();
@@ -452,7 +523,7 @@ function play(delta) {
             // hitText.text = `${hitRate.toPrecision(3)}`;
             noteCounter++;
 
-            // This subtracts the time when the user presses the corresponding fret to 
+            // This subtracts the time when the user presses the corresponding fret to
             // with the previously taken time
             reactionTimes.push(new Date().valueOf() - note.isInsideFretTime);
           }
@@ -471,14 +542,13 @@ function play(delta) {
         noteCounter++;
       }
     });
-
   } else {
     gameBg.tint = 0x333333;
   }
   if (isGameOver) {
     gameNumber += 1;
-    console.log(gameNumber);
     state = end;
+    noise.pause();
   }
 }
 
@@ -498,7 +568,7 @@ function end(delta) {
 
   if (restart) {
     if (gameNumber > totalGameNumber) {
-      gameOverText.text = `You are all done, come back next week!`
+      gameOverText.text = `You are all done, come back next week!`;
     } else {
       prevHitRate = 0;
       prevNoteCounter = 0;
@@ -516,7 +586,6 @@ function end(delta) {
   }
 }
 
-
 export {
   hits,
   misses,
@@ -525,6 +594,6 @@ export {
   reactionTimes,
   setPassSequence,
   gameNumber,
-  totalGameNumber
+  totalGameNumber,
 };
 export default app;
