@@ -98,7 +98,7 @@ const setPassSequence = (seq) => {
   // sequence = passSequence
 };
 
-function setup(loader, resources) {
+function setup() {
   isPaused = true;
   restart = false;
   isGameOver = false;
@@ -265,7 +265,7 @@ function setup(loader, resources) {
   );
 
   let space = lib.keyboard(32);
-  let esc = lib.keyboard(27);
+  // let esc = lib.keyboard(27);
 
   space.press = () => {
     isPaused = !isPaused;
@@ -277,9 +277,9 @@ function setup(loader, resources) {
     }
   };
 
-  esc.press = () => {
-    isGameOver = true;
-  };
+  // esc.press = () => {
+  //   isGameOver = true;
+  // };
 
   keyInputs.forEach((key, i, arr) => {
     key.press = () => {
@@ -394,10 +394,6 @@ function generateNote(n) {
 
   circle.tint = 0x000000;
   circle["isInsideFretTime"] = 0;
-  circle["colorChange"] = false;
-
-  circle["colorChangeTime"] = 5;
-  circle["colorTimer"] = 1;
 
   notes.push(circle);
   // console.log(circle);
@@ -491,19 +487,6 @@ function play(delta) {
     // For each note check if it is colliding with any fret.
     notes.forEach((note, index, object) => {
       note.y += note.vy * delta;
-
-      note.colorTimer =
-        note.colorTimer > 0 ? --note.colorTimer : note.colorChangeTime;
-
-      if (note.colorTimer === 0) {
-        note.colorChange = !note.colorChange;
-      }
-
-      if (note.colorChange) {
-        note.tint = 0xffffff;
-      } else {
-        note.tint = 0x000000;
-      }
 
       frets.forEach((fret) => {
         if (collisionCheck(fret, note)) {
