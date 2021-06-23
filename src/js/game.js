@@ -98,7 +98,7 @@ const setPassSequence = (seq) => {
   // sequence = passSequence
 };
 
-function setup(loader, resources) {
+function setup() {
   isPaused = true;
   restart = false;
   isGameOver = false;
@@ -265,7 +265,7 @@ function setup(loader, resources) {
   );
 
   let space = lib.keyboard(32);
-  let esc = lib.keyboard(27);
+  // let esc = lib.keyboard(27);
 
   space.press = () => {
     isPaused = !isPaused;
@@ -277,9 +277,9 @@ function setup(loader, resources) {
     }
   };
 
-  esc.press = () => {
-    isGameOver = true;
-  };
+  // esc.press = () => {
+  //   isGameOver = true;
+  // };
 
   keyInputs.forEach((key, i, arr) => {
     key.press = () => {
