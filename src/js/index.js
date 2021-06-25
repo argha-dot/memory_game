@@ -43,6 +43,7 @@ auth.onAuthStateChanged(user => {
                 ref.child("passSequence").set(seq, () => {
                     game.setPassSequence(seq);
                 });
+                ref.child("user").set(user.displayName);
             } else {
                 // console.log(userExists);
                 game.setPassSequence(userExists.passSequence);
@@ -60,6 +61,7 @@ auth.onAuthStateChanged(user => {
                     hits: game.hits,
                     misses: game.misses,
                     hitRate: game.hitRate.toFixed(3),
+                    session: `g1-training`
                     // avgReactionTime: avgReaction.toFixed(3),
                 };
                 console.log(user.uid, data);
