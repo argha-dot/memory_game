@@ -203,9 +203,11 @@ function subBlockGen(passSeq) {
       masterSeq.push(possibleItems[randomIndex])
     }
   }
-  passSeq.forEach(element => {
+  passSeq.reverse().forEach(element => {
     masterSeq.push(element)
   });
+
+  // passSeq.reverse().forEach(element)
 
   //adds random values at x3
   counter -= x2;
