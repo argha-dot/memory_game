@@ -201,7 +201,7 @@ function setup() {
 
     let line = new Graphics();
 
-    line.lineStyle(2, 0x000000, 1);
+    line.lineStyle(10, 0x000000, 1);
 
     line.moveTo(offsetX + i * gap, 100);
     line.lineTo(offsetX + i * gap, DIMENSIONS.height - 20);
@@ -396,7 +396,7 @@ function generateNote(n) {
   circle["isInsideFretTime"] = 0;
   circle["colorChange"] = false;
 
-  circle["colorChangeTime"] = 5;
+  circle["colorChangeTime"] = 2;
   circle["colorTimer"] = 1;
 
   notes.push(circle);
