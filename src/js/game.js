@@ -196,12 +196,12 @@ function setup() {
 
   // Lines
   for (let i = 0; i < 8; i++) {
-    let offsetX = 55;
-    let gap = 70;
+    let offsetX = 20;
+    let gap = 80;
 
     let line = new Graphics();
 
-    line.lineStyle(10, 0x2c2c2c, 1);
+    line.lineStyle(10, 0x909090, 1);
 
     line.moveTo(offsetX + i * gap, 100);
     line.lineTo(offsetX + i * gap, DIMENSIONS.height - 20);
@@ -219,8 +219,8 @@ function setup() {
   // Frets
   frets = [];
   for (let i = 0; i < 7; i++) {
-    let offsetX = 60;
-    let gap = 70;
+    let offsetX = 30;
+    let gap = 80;
 
     if (i == 3) {
       continue;
@@ -244,8 +244,8 @@ function setup() {
       gameScene
     );
     let j = i > 2 ? i + 1 : i;
-    let offsetX = 60 + 30;
-    let gap = 70;
+    let offsetX = 30 + 30;
+    let gap = 80;
     letter.position.set(
       offsetX - letter.width / 2 + j * gap,
       DIMENSIONS.height - 60
@@ -369,8 +369,8 @@ function noteSequence() {
 
 // If n === -1 or 3: random note; 1-2 and 4-6: appropriate column
 function generateNote(n) {
-  let noteOffsetX = 90,
-    noteGapX = 70;
+  let noteOffsetX = 60,
+    noteGapX = 80;
 
   let x;
 
