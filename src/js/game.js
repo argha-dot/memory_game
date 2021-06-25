@@ -201,14 +201,14 @@ function setup() {
 
     let line = new Graphics();
 
-    line.lineStyle(10, 0x000000, 1);
+    line.lineStyle(10, 0x2c2c2c, 1);
 
     line.moveTo(offsetX + i * gap, 100);
     line.lineTo(offsetX + i * gap, DIMENSIONS.height - 20);
 
     if (i == 0 || i == 7) {
       // For the last two lines
-      line.lineStyle(2, 0x000000, 1);
+      line.lineStyle(2, 0x2c2c2c, 1);
       line.moveTo(offsetX + i * gap, 20);
       line.lineTo(offsetX + i * gap, DIMENSIONS.height - 20);
     }
@@ -396,7 +396,7 @@ function generateNote(n) {
   circle["isInsideFretTime"] = 0;
   circle["colorChange"] = false;
 
-  circle["colorChangeTime"] = 2;
+  circle["colorChangeTime"] = 5;
   circle["colorTimer"] = 1;
 
   notes.push(circle);
@@ -495,8 +495,10 @@ function play(delta) {
       note.colorTimer =
         note.colorTimer > 0 ? --note.colorTimer : note.colorChangeTime;
 
-      if (note.colorTimer === 0) {
+      if (note.colorTimer === 0 && note.y < DIMENSIONS.height - 120) {
         note.colorChange = !note.colorChange;
+      } else {
+        note.colorChange = false;
       }
 
       if (note.colorChange) {
@@ -543,7 +545,7 @@ function play(delta) {
       }
     });
   } else {
-    gameBg.tint = 0x333333;
+    gameBg.tint = 0x111111;
   }
   if (isGameOver) {
     gameNumber += 1;
