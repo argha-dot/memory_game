@@ -5,9 +5,9 @@ import { Howl, Howler } from "howler";
 import * as lib from "../lib/lib";
 
 import noiseSound from "../assets/noise.mp3";
-import slSound from "../assets/sl.mp3";
-import dkSound from "../assets/dk.mp3";
-import fjSound from "../assets/fj.mp3";
+import oneSound from "../assets/notes/one.mp3";
+import twoSound from "../assets/notes/two.mp3";
+import threeSound from "../assets/notes/three.mp3";
 
 // let loader = PIXI.Loader.shared;
 
@@ -49,16 +49,16 @@ let noise = new Howl({
 });
 
 let fretSounds = {
-  sl: new Howl({
-    src: [slSound],
+  one: new Howl({
+    src: [oneSound],
     volume: 0.7,
   }),
-  dk: new Howl({
-    src: [dkSound],
+  two: new Howl({
+    src: [twoSound],
     volume: 0.7,
   }),
-  fj: new Howl({
-    src: [fjSound],
+  three: new Howl({
+    src: [threeSound],
     volume: 0.7,
   }),
 };
@@ -297,26 +297,26 @@ function setup() {
         frets[i].isPressed = true;
         switch (i) {
           case 0:
-            fretSounds.sl.play();
+            fretSounds.one.play();
             break;
           case 1:
-            fretSounds.dk.play();
+            fretSounds.two.play();
             break;
           case 2:
-            fretSounds.fj.play();
+            fretSounds.three.play();
             break;
           case 3:
-            fretSounds.dk.play();
+            fretSounds.two.play();
             break;
           case 4:
-            fretSounds.fj.play();
+            fretSounds.three.play();
             break;
           case 5:
-            fretSounds.sl.play();
+            fretSounds.one.play();
             break;
           
             default:
-            fretSounds.sl.play();
+            fretSounds.one.play();
             break;
         }
       }
