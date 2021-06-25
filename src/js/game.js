@@ -306,15 +306,16 @@ function setup() {
             fretSounds.fj.play();
             break;
           case 3:
-            fretSounds.fj.play();
+            fretSounds.dk.play();
             break;
           case 4:
-            fretSounds.dk.play();
+            fretSounds.fj.play();
             break;
           case 5:
             fretSounds.sl.play();
             break;
-          default:
+          
+            default:
             fretSounds.sl.play();
             break;
         }
