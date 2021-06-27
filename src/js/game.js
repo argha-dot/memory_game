@@ -39,7 +39,7 @@ app.loader.load(setup);
 let noise = new Howl({
   src: [noiseSound],
   loop: true,
-  volume: 0.2,
+  volume: 0.1,
   onloaderror: (s, e) => {
     console.log(`sound: ${s}, ${e}`);
   },
@@ -51,15 +51,15 @@ let noise = new Howl({
 let fretSounds = {
   one: new Howl({
     src: [oneSound],
-    volume: 0.7,
+    volume: 0.4,
   }),
   two: new Howl({
     src: [twoSound],
-    volume: 0.7,
+    volume: 0.4,
   }),
   three: new Howl({
     src: [threeSound],
-    volume: 0.7,
+    volume: 0.4,
   }),
 };
 
