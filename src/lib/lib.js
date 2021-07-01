@@ -203,7 +203,7 @@ function subBlockGen(passSeq) {
       masterSeq.push(possibleItems[randomIndex])
     }
   }
-  passSeq.forEach(element => {
+  passSeq.reverse().forEach(element => {
     masterSeq.push(element)
   });
 
@@ -238,6 +238,42 @@ function subBlockGen(passSeq) {
   return (masterSeq)
 }
 
+const authSeqGen = (passSeq) => {
+  const authSeqData = require("./authSeq.json");
+  let k0 = passSeq;
+  let k1 = authSeqData.k1;
+  let k2 = authSeqData.k2;
+  let seq = [];
+  let availableIndexes = []
+  let indexofPass = []
+
+  //initialising seq
+  for (let i = 0; i < 18; i++) {
+    seq.push("_")
+    availableIndexes.push(i)
+  }
+
+  //adding k0 to 6 random indexes
+  for (let j = 0; j < 18; j = j + 3) {
+    let availableSeq = [k0, k1, k2];
+    for (let i = 0; i < 3; i++) {
+      let randomSeq = availableSeq[Math.floor(Math.random() * availableSeq.length)];
+      if (randomSeq === k0) {
+        indexofPass.push(j + i);
+      }
+      seq[j + i] = randomSeq;
+      availableSeq.splice(availableSeq.indexOf(randomSeq), 1)
+    }
+  }
+  //stores the position of the first item of the passsequence in both arrays
+  const flattenedSeq = seq.flat();
+  let indexinFlattened = indexofPass.map((item) => (
+    item = item * 30
+  ))
+
+
+  return { sequence: flattenedSeq, indexesOfPass: indexinFlattened }
+}
 
 export {
   createCircle,
@@ -249,5 +285,6 @@ export {
   getDistance,
   circleCollisionBounce,
   createText,
-  subBlockGen
+  subBlockGen,
+  authSeqGen,
 };

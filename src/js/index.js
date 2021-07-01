@@ -13,6 +13,9 @@ const signOutBtn = document.getElementById("signOutBtn");
 const finishBtn = document.getElementById("finishBtn");
 
 const userDetails = document.getElementById("userDetails");
+const loginToPlay = document.getElementById("loginToPlay");
+
+
 
 signInBtn.onclick = () => {
     auth.signInWithPopup(provider)
@@ -28,47 +31,57 @@ auth.onAuthStateChanged(user => {
     if (user) {
         signedIn.hidden = false;
         signedOut.hidden = true;
-        
-        userDetails.innerHTML = `<p style="padding: 0; margin: 0;">Hello ${user.displayName}</p>`
+
+        userDetails.innerHTML = `<p style="padding: 0; margin: 0;">Hello ${user.displayName}!</p>`
 
         const ref = database.ref(user.uid);
         ref.once("value", (data) => {
             const userExists = data.val();
-            if (!userExists) {
-                ref.child("passSequence").set(getRandomPassSequence());
-            } else {
-                console.log(userExists);
+            //if user is new
+            if (userExists) {
+                // let seq = getRandomPassSequence()
+                // ref.child("passSequence").set(seq, () => {
+                //     game.setPassSequence(seq);
+                // });
+                // ref.child("user").set(user.displayName);
                 game.setPassSequence(userExists.passSequence);
+                document.querySelector("#main").appendChild(app.view);
+            } else {
+                // console.log(userExists);
+                alert("Please Log in using the account you used previously. If you never played this game, contact the people on spreadsheet")
             }
         });
 
         finishBtn.onclick = (e) => {
-            if (game.isGameOver) {
+            console.log();
+            if (game.isGameOver && game.gameNumber === game.totalGameNumber + 1) {
+                // const avgReaction = avgArray(game.reactionTimes);
                 console.log("game over");
-
                 e.preventDefault();
-
                 const data = {
                     hits: game.hits,
                     misses: game.misses,
-                    hitRate: game.hitRate,
-                    avgReactionTime: game.reactionTimes,
+                    hitRate: game.hitRate.toFixed(3),
+                    passHits: game.passHits,
+                    passMisses: game.passMisses,
+                    passHitRate: game.passHitRate.toFixed(3),
+                    session: `g1-authentication`
+                    // avgReactionTime: avgReaction.toFixed(3),
                 };
                 console.log(user.uid, data);
 
                 ref.push(data);
-
+                alert(`Uploaded your data:- HITS:${data.hits}, MISSES:${data.misses}, HITRATE:${data.hitRate}.  Thanks for playing!`);
             } else {
-                alert("game not over yet");
+                alert(`Game not over yet, Game number ${game.gameNumber} out of 7`);
             }
         };
-
     } else {
         signedIn.hidden = true;
         signedOut.hidden = false;
-        userDetails.innerHTML = ``;
+        loginToPlay.innerHTML = `<p style="padding: 0; margin: 0;">Login to Play</p>`;
+        document.querySelector("#main").removeChild(app.view);
     }
 });
 
-console.log(game);
-document.querySelector("#main").appendChild(app.view);
+// console.log(game);

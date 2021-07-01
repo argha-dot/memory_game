@@ -1,9 +1,15 @@
 import * as PIXI from "pixi.js";
 import { Application, Container, Graphics, Sprite, Texture } from "pixi.js";
+import { Howl, Howler } from "howler";
 
 import * as lib from "../lib/lib";
 
-let loader = PIXI.Loader.shared;
+import noiseSound from "../assets/noise.mp3";
+import oneSound from "../assets/notes/one.mp3";
+import twoSound from "../assets/notes/two.mp3";
+import threeSound from "../assets/notes/three.mp3";
+
+// let loader = PIXI.Loader.shared;
 
 let type = "WebGL";
 if (!PIXI.utils.isWebGLSupported()) {
@@ -24,18 +30,47 @@ let app = new Application({
   height: DIMENSIONS.height,
   resolution: 1,
 });
-
+app.ticker.maxFPS = 60;
 // document.querySelector("#main").appendChild(app.view);
 
-loader.load(setup);
+app.loader.add("../assets/dirt.png");
+app.loader.load(setup);
+
+let noise = new Howl({
+  src: [noiseSound],
+  loop: true,
+  volume: 0.1,
+  onloaderror: (s, e) => {
+    console.log(`sound: ${s}, ${e}`);
+  },
+  onplayerror: () => {
+    console.log("object1");
+  },
+});
+
+let fretSounds = {
+  one: new Howl({
+    src: [oneSound],
+    volume: 0.4,
+  }),
+  two: new Howl({
+    src: [twoSound],
+    volume: 0.4,
+  }),
+  three: new Howl({
+    src: [threeSound],
+    volume: 0.4,
+  }),
+};
 
 let state, gameScene, gameBg, isPaused;
 let gameOverBg, gameOverText, gameOverScene, restartButton, restart;
-let scoreScene, scoreText, missText, hitText, scoreBg;
+let scoreScene, scoreText, missText, hitText, streakText, scoreBg;
 let numberOfNotes, noteSpeed, noteGenerateLag, timer;
 let frets, keyInputs, notes;
 
 let hits = 0;
+let streak = 0;
 let misses = 0;
 let hitRate = 0;
 let prevHitRate = 0;
@@ -44,22 +79,44 @@ let prevNoteCounter = 0;
 let isGameOver;
 let reactionTimes = [];
 let avgReactionTime = 0;
+let numberOfLevels = 5;
+let totalGameNumber = 1;
+let gameNumber;
 
 let indexForNotes = 0;
-let obj = { "S": 0, "D": 1, "F": 2, "J": 4, "K": 5, "L": 6 };  // Note to integer conversion
+let obj = { S: 0, D: 1, F: 2, J: 4, K: 5, L: 6 }; // Note to integer conversion
 let passSequence = []; // Password sequence for the current user.
 let sequence;
+let authGen;
+let passIndexes;
+let onPassSeq;
+let passFirstNote;
+let passHits = 0;
+let passMisses = 0;
+let passHitRate = 0;
 
 const setPassSequence = (seq) => {
   passSequence = seq;
-  sequence = lib.subBlockGen(passSequence);
+  
+  // for (let i = 0; i < numberOfLevels - 1; i++) {
+    //   sequence = [...sequence, ...lib.subBlockGen(passSequence)];
+    // }
+  
+    authGen = lib.authSeqGen(passSequence);
+  sequence = authGen.sequence;
+  passIndexes = authGen.indexesOfPass;
+
+  
   console.log(sequence);
-}
+  console.log(passIndexes);
+  // sequence = passSequence
+};
 
 function setup() {
   isPaused = true;
   restart = false;
   isGameOver = false;
+  gameNumber = 1;
 
   gameScene = new Container();
   scoreScene = new Container();
@@ -84,18 +141,20 @@ function setup() {
   scoreScene.position.set(DIMENSIONS.gameWidth, 0);
 
   // Score Text
-  scoreText = lib.createText(`score: ${hits}`, { fill: "black" }, scoreScene);
+  scoreText = lib.createText(`Score: 0`, { fill: "black" }, scoreScene);
   scoreText.position.set(scoreBg.width / 2 - scoreText.width / 2, 50);
 
-  missText = lib.createText(`misses: ${misses}`, { fill: "black" }, scoreScene);
-  missText.position.set(scoreBg.width / 2 - missText.width / 2, 100);
+  // missText = lib.createText(`Misses: ${misses}`, { fill: "black" }, scoreScene);
+  // missText.position.set(scoreBg.width / 2 - missText.width / 2, 100);
 
-  hitText = lib.createText(
-    `${hitRate.toPrecision(3)}`,
-    { fill: "black" },
-    scoreScene
-  );
-  hitText.position.set(scoreBg.width / 2 - hitText.width / 2, 150);
+  streakText = lib.createText(`Streak: 0`, { fill: "black" }, scoreScene);
+  streakText.position.set(scoreBg.width / 2 - streakText.width / 2, 100);
+  // hitText = lib.createText(
+  //   `${hitRate.toPrecision(3)}`,
+  //   { fill: "black" },
+  //   scoreScene
+  // );
+  // hitText.position.set(scoreBg.width / 2 - hitText.width / 2, 150);
 
   // Game Over
   gameOverBg = new Sprite(Texture.WHITE);
@@ -105,26 +164,31 @@ function setup() {
   gameOverBg.tint = 0xffffff;
 
   restartButton = new Sprite(Texture.WHITE);
-  restartButton.width = 25;
-  restartButton.height = 25;
-  restartButton.position.set(0, 0);
-  restartButton.tint = 0x000000;
-  restartButton.interactive = true;
+  const restartText = new PIXI.Text("Continue", { fill: "#000000" });
   restartButton.on("mouseup", () => {
     restart = true;
   });
+  restartButton.width = 150;
+  restartButton.height = restartText.height;
+  let restartX = DIMENSIONS.gameWidth / 2 - 0.5 * restartButton.width;
+  let restartY = DIMENSIONS.height / 2 + 50;
+  let restartTextX = DIMENSIONS.gameWidth / 2 - 0.5 * restartText.width;
+  restartButton.position.set(restartX, restartY);
+  restartText.position.set(restartTextX, restartY);
+  restartButton.tint = 0x666666;
+  restartButton.interactive = true;
 
   gameOverScene.addChild(gameOverBg);
-  gameOverScene.addChild(restartButton);
+  gameOverScene.addChild(restartButton, restartText);
 
   gameOverScene.visible = false;
 
   // Game Over Text
   gameOverText = lib.createText(
-    `GAME OVER`,
+    `Level ${gameNumber}/7 Complete, Take a short break.`,
     {
       fill: "black",
-      fontFamily: "pixel, sans-serif",
+      // fontFamily: "pixel, sans-serif",
     },
     gameOverScene
   );
@@ -139,28 +203,26 @@ function setup() {
   gameBg.height = DIMENSIONS.height;
   gameBg.position.set(0, 0);
   gameBg.tint = 0xffffff;
-
   gameScene.addChild(gameBg);
-
   // The distance between each pole is 70, there are 8 such poles, hence 7 spaces,
   // therefore total width between the first and last pole will be 7 * 70 = 490.
   // Total width of the gameScene is 600, hence there is a whitespace of 110 on both sides.
 
   // Lines
   for (let i = 0; i < 8; i++) {
-    let offsetX = 55;
-    let gap = 70;
+    let offsetX = 20;
+    let gap = 80;
 
     let line = new Graphics();
 
-    line.lineStyle(2, 0x000000, 1);
+    line.lineStyle(10, 0x909090, 1);
 
     line.moveTo(offsetX + i * gap, 100);
     line.lineTo(offsetX + i * gap, DIMENSIONS.height - 20);
 
     if (i == 0 || i == 7) {
       // For the last two lines
-      line.lineStyle(2, 0x000000, 1);
+      line.lineStyle(2, 0x2c2c2c, 1);
       line.moveTo(offsetX + i * gap, 20);
       line.lineTo(offsetX + i * gap, DIMENSIONS.height - 20);
     }
@@ -170,10 +232,9 @@ function setup() {
 
   // Frets
   frets = [];
-
   for (let i = 0; i < 7; i++) {
-    let offsetX = 60;
-    let gap = 70;
+    let offsetX = 30;
+    let gap = 80;
 
     if (i == 3) {
       continue;
@@ -186,12 +247,10 @@ function setup() {
 
     fret.position.set(offsetX + i * gap, DIMENSIONS.height - 80);
     frets.push({ fret: fret, isPressed: false });
-
     gameScene.addChild(fret);
   }
 
   let letters = "SDFJKL";
-
   for (let i = 0; i < 6; i++) {
     let letter = lib.createText(
       `${letters[i]}`,
@@ -199,8 +258,8 @@ function setup() {
       gameScene
     );
     let j = i > 2 ? i + 1 : i;
-    let offsetX = 60 + 30;
-    let gap = 70;
+    let offsetX = 30 + 30;
+    let gap = 80;
     letter.position.set(
       offsetX - letter.width / 2 + j * gap,
       DIMENSIONS.height - 60
@@ -220,34 +279,93 @@ function setup() {
   );
 
   let space = lib.keyboard(32);
-  let esc = lib.keyboard(27);
+  // let esc = lib.keyboard(27);
 
   space.press = () => {
     isPaused = !isPaused;
+
+    if (!isPaused) {
+      noise.play();
+    } else {
+      noise.pause();
+    }
   };
 
-  esc.press = () => {
-    isGameOver = true;
-  };
+  // esc.press = () => {
+  //   isGameOver = true;
+  // };
 
-  keyInputs.forEach((key, i) => {
+  keyInputs.forEach((key, i, arr) => {
     key.press = () => {
-      frets[i].isPressed = true;
+      let isOtherDown = false;
+
+      arr
+        .filter((oKey) => oKey !== key)
+        .forEach((otherKey) => {
+          if (otherKey.isDown) {
+            isOtherDown = true;
+          }
+        });
+
+      if (!isOtherDown) {
+        frets[i].isPressed = true;
+        switch (i) {
+          case 0:
+            fretSounds.one.play();
+            break;
+          case 1:
+            fretSounds.two.play();
+            break;
+          case 2:
+            fretSounds.three.play();
+            break;
+          case 3:
+            fretSounds.two.play();
+            break;
+          case 4:
+            fretSounds.three.play();
+            break;
+          case 5:
+            fretSounds.one.play();
+            break;
+          
+            default:
+            fretSounds.one.play();
+            break;
+        }
+      }
     };
     key.release = () => {
       frets[i].isPressed = false;
     };
   });
 
+  // window.addEventListener('keydown', onKeyDown)
+  // window.addEventListener('keyup', onKeyUp)
+
+  // let pressKeys = [83, 68, 70, 74, 75, 76]
+
+  // function onKeyDown(key) {
+  //   let index = pressKeys.indexOf(key.keyCode)
+  //   let othersPressed = false;
+  //   for (let j = 1; j < pressKeys.length; j++) {
+  //     if (frets[(index + j) % pressKeys.length].isPressed) {
+  //       othersPressed = true;
+  //     }
+  //   }
+  //   if (!othersPressed) {
+  //     frets[index].isPressed = true;
+  //   }
+  // }
+  // function onKeyUp(key) {
+  //   let index = pressKeys.indexOf(key.keyCode)
+  //   frets[index].isPressed = false;
+  // }
+
   // Notes
   numberOfNotes = 0;
   noteSpeed = 5;
   notes = [];
-
-  // for (let i = 0; i < numberOfNotes; i++) {
-  //   generateNote(-1);
-  // }
-
   noteGenerateLag = 50;
   timer = 1;
 
@@ -257,19 +375,17 @@ function setup() {
 
 function noteSequence() {
   if (indexForNotes > sequence.length - 1) {
-    // isGameOver = true;
+    // sequence = lib.subBlockGen(passSequence);
   } else {
-    if (sequence)
-
-    generateNote(obj[sequence[indexForNotes]]);
+    if (sequence) generateNote(obj[sequence[indexForNotes]]);
     indexForNotes++;
   }
 }
 
 // If n === -1 or 3: random note; 1-2 and 4-6: appropriate column
 function generateNote(n) {
-  let noteOffsetX = 90,
-    noteGapX = 70;
+  let noteOffsetX = 60,
+    noteGapX = 80;
 
   let x;
 
@@ -293,6 +409,10 @@ function generateNote(n) {
 
   circle.tint = 0x000000;
   circle["isInsideFretTime"] = 0;
+  circle["colorChange"] = false;
+
+  circle["colorChangeTime"] = 5;
+  circle["colorTimer"] = 1;
 
   notes.push(circle);
   // console.log(circle);
@@ -304,28 +424,27 @@ function gameLoop(delta) {
   state(delta);
 }
 
-function hitRateMonitor(prevHR, curHR) {
-  console.log("hitRate:", curHR.toPrecision(3), prevHR.toPrecision(3), "speed:", noteSpeed.toPrecision(3));
+function hitRateMonitor(curHR) {
+  // console.log("hitRate:", curHR.toPrecision(3), prevHR.toPrecision(3), "speed:", noteSpeed.toPrecision(3));
   let alpha = 10;
+  let beta = 25;
 
-  noteSpeed = Math.floor(noteSpeed - ((0.7 - curHR) * alpha))
-  noteGenerateLag = Math.floor(noteGenerateLag + ((0.7 - curHR) * 25))
+  noteSpeed = Math.floor(noteSpeed - (0.7 - curHR) * alpha);
+  noteGenerateLag = Math.floor(noteGenerateLag + (0.7 - curHR) * beta);
 
   if (noteSpeed < 3) {
     noteSpeed = 3;
-  }
-  else if (noteSpeed > 15) {
-    noteSpeed = 15;
+  } else if (noteSpeed > 12) {
+    noteSpeed = 12;
   }
   //changing noteGenerateLag
   if (noteGenerateLag > 55) {
     noteGenerateLag = 55;
-  }
-  else if (noteGenerateLag < 20) {
+  } else if (noteGenerateLag < 20) {
     noteGenerateLag = 20;
   }
-  console.log(noteSpeed);
-  console.log(noteGenerateLag);
+  // console.log(noteSpeed);
+  // console.log(noteGenerateLag);
 }
 
 function collisionCheck(fret, note) {
@@ -340,11 +459,33 @@ function collisionCheck(fret, note) {
   );
 }
 
+function onPassOn() {
+  onPassSeq = true;
+  if (passIndexes.length > 0) {
+    passIndexes.shift();
+  }
+  passFirstNote = noteCounter;
+}
+
+function onPassOff() {
+  if (noteCounter >= passFirstNote + 30) {
+    onPassSeq = false;
+  }
+}
+
 function play(delta) {
   gameScene.visible = true;
   gameOverScene.visible = false;
 
   if (!isPaused) {
+
+    if (noteCounter === passIndexes[0] && noteCounter !== prevNoteCounter) {
+      onPassOn();
+    }
+
+    if (onPassSeq && noteCounter !== prevNoteCounter) {
+      onPassOff();
+    }
 
     if (indexForNotes > sequence.length - 1 && notes.length === 0) {
       if (timer === 0) {
@@ -357,8 +498,7 @@ function play(delta) {
       noteCounter % 20 === 0 &&
       noteCounter !== 0
     ) {
-      console.log("counter: ", noteCounter);
-      hitRateMonitor(prevHitRate, hitRate);
+      hitRateMonitor(hitRate);
       notes.forEach((note) => {
         note.vy = noteSpeed;
       });
@@ -384,16 +524,29 @@ function play(delta) {
       }
     });
 
-    prevHitRate = hitRate;
     prevNoteCounter = noteCounter;
 
     // For each note check if it is colliding with any fret.
     notes.forEach((note, index, object) => {
       note.y += note.vy * delta;
 
+      note.colorTimer =
+        note.colorTimer > 0 ? --note.colorTimer : note.colorChangeTime;
+
+      if (note.colorTimer === 0 && note.y < DIMENSIONS.height - 120) {
+        note.colorChange = !note.colorChange;
+      } else {
+        note.colorChange = false;
+      }
+
+      if (note.colorChange) {
+        note.tint = 0xffffff;
+      } else {
+        note.tint = 0x000000;
+      }
+
       frets.forEach((fret) => {
         if (collisionCheck(fret, note)) {
-
           // The reaction time, this is the epoch time when note enters the fret
           if (!note.isInsideFretTime) {
             note.isInsideFretTime = new Date().valueOf();
@@ -403,13 +556,18 @@ function play(delta) {
             note.clear();
             object.splice(index, 1);
             hits += 1;
-
+            streak += 1;
             hitRate = hits / (hits + misses);
-            scoreText.text = `score: ${hits}`;
-            hitText.text = `${hitRate.toPrecision(3)}`;
+            scoreText.text = `Score: ${hits}`;
+            streakText.text = `Streak: ${streak}`;
+            // hitText.text = `${hitRate.toPrecision(3)}`;
             noteCounter++;
-
-            // This subtracts the time when the user presses the corresponding fret to 
+            if (onPassSeq) {
+              passHits += 1;
+              passHitRate = passHits / (passHits + passMisses);
+              // console.log(passHits, passMisses, passHitRate.toPrecision(3));
+            }
+            // This subtracts the time when the user presses the corresponding fret to
             // with the previously taken time
             reactionTimes.push(new Date().valueOf() - note.isInsideFretTime);
           }
@@ -421,26 +579,35 @@ function play(delta) {
         note.clear();
         object.splice(index, 1);
         misses += 1;
+        streak = 0;
         hitRate = hits / (hits + misses);
-        missText.text = `misses: ${misses}`;
-        hitText.text = `${hitRate.toPrecision(3)}`;
+        streakText.text = `Streak: ${streak}`;
+        // hitText.text = `${hitRate.toPrecision(3)}`;
         noteCounter++;
+        if (onPassSeq) {
+          passMisses += 1;
+          passHitRate = passHits / (passHits + passMisses);
+          // console.log(passHits, passMisses, passHitRate.toPrecision(3));
+        }
       }
     });
-
   } else {
-    gameBg.tint = 0x333333;
+    gameBg.tint = 0x111111;
   }
-
   if (isGameOver) {
+    gameNumber += 1;
     state = end;
+    noise.pause();
   }
 }
 
 function end(delta) {
   gameScene.visible = false;
   gameOverScene.visible = true;
-
+  gameOverText.text =
+    gameNumber <= totalGameNumber
+      ? `GAME ${gameNumber - 1}/7 Finished. Take a short break!`
+      : `All Games Finished! Press "Finish Session". `;
 
   notes.forEach((note) => {
     note.clear();
@@ -449,25 +616,22 @@ function end(delta) {
   notes = [];
 
   if (restart) {
-    hits = 0;
-    misses = 0;
-    hitRate = 0;
-    prevHitRate = 0;
-    prevNoteCounter = 0;
-    noteCounter = 0;
-    indexForNotes = 0;
-    noteGenerateLag = 50;
-    noteSpeed = 5;
-
-    scoreText.text = `score: ${hits}`;
-    hitText.text = `${hitRate.toPrecision(3)}`;
-    missText.text = `misses: ${misses}`;
-    reactionTimes = [];
-
-    isGameOver = false;
-    restart = false;
-    isPaused = true;
-    state = play;
+    if (gameNumber > totalGameNumber) {
+      gameOverText.text = `You are all done, come back next week!`;
+    } else {
+      prevHitRate = 0;
+      prevNoteCounter = 0;
+      noteCounter = 0;
+      indexForNotes = 0;
+      noteGenerateLag = 50;
+      noteSpeed = 5;
+      sequence = [];
+      setPassSequence(passSequence);
+      isGameOver = false;
+      restart = false;
+      isPaused = true;
+      state = play;
+    }
   }
 }
 
@@ -478,5 +642,10 @@ export {
   isGameOver,
   reactionTimes,
   setPassSequence,
+  gameNumber,
+  totalGameNumber,
+  passHits,
+  passMisses,
+  passHitRate,
 };
 export default app;
