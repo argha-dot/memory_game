@@ -102,7 +102,7 @@ const setPassSequence = (seq) => {
     //   sequence = [...sequence, ...lib.subBlockGen(passSequence)];
     // }
   
-    authGen = lib.authSeqGen(passSequence);
+  authGen = lib.authSeqGen(passSequence);
   sequence = authGen.sequence;
   passIndexes = authGen.indexesOfPass;
 

@@ -50,6 +50,7 @@ auth.onAuthStateChanged(user => {
                 // console.log(userExists);
                 alert("Please Log in using the account you used previously. If you never played this game, contact the people on spreadsheet")
             }
+            document.querySelector("#main").appendChild(app.view);
         });
 
         finishBtn.onclick = (e) => {

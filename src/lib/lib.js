@@ -275,6 +275,7 @@ const authSeqGen = (passSeq) => {
   return { sequence: flattenedSeq, indexesOfPass: indexinFlattened }
 }
 
+
 export {
   createCircle,
   rectCollisionCheck,
