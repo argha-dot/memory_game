@@ -1,9 +1,10 @@
 import json, os, csv
 from pprint import pprint
 
+
 def get_file_contents():
     with open(os.path.join(".", "4-7-2021.json"), "r") as f:
-        json_str = f.read().replace("\n", "");
+        json_str = f.read().replace("\n", "")
         pass
 
     return json.loads(json_str)
@@ -13,14 +14,34 @@ def create_csv(dict_obj):
 
     session_names = ["g0-training", "g0-authentication", "g0-authentication2"]
 
-
     with open("4-7-2021.csv", "w") as file:
         csv_writer = csv.writer(file)
 
-        csv_writer.writerow(["Names", "Pass Sequence", "Hits-Training", "Misses-Training", "HitRate-Training", "Hits-Auth-1", "Misses-Auth-1", "HitRate-Auth-1", "passHits-Auth-1", "passMisses-Auth-1", "passHitRate-Auth-1", "Hits-Auth-2", "Misses-Auth-2", "HitRate-Auth-2", "passHits-Auth-2", "passMisses-Auth-2", "passHitRate-Auth-2", "User ID" ])
-        
+        csv_writer.writerow(
+            [
+                "Names",
+                "Pass Sequence",
+                "Hits-Training",
+                "Misses-Training",
+                "HitRate-Training",
+                "Hits-Auth-1",
+                "Misses-Auth-1",
+                "HitRate-Auth-1",
+                "passHits-Auth-1",
+                "passMisses-Auth-1",
+                "passHitRate-Auth-1",
+                "Hits-Auth-2",
+                "Misses-Auth-2",
+                "HitRate-Auth-2",
+                "passHits-Auth-2",
+                "passMisses-Auth-2",
+                "passHitRate-Auth-2",
+                "User ID",
+            ]
+        )
+
         for user in list(dict_obj.items()):
-        # user = list(dict_obj.items())[1]
+            # user = list(dict_obj.items())[1]
             hits_training = ""
             misses_training = ""
             hitRate_training = ""
@@ -64,8 +85,29 @@ def create_csv(dict_obj):
                             passHitRate_auth_2 = item[1].get("passHitRate")
                         else:
                             raise Exception()
-            
-                csv_writer.writerow([_user, passSequence, hits_training, misses_training, hitRate_training, hits_auth_1, misses_auth_1, hitRate_auth_1, passHits_auth_1, passMisses_auth_1, passHitRate_auth_1, hits_auth_2, misses_auth_2, hitRate_auth_2, passHits_auth_2, passMisses_auth_2, passHitRate_auth_2, user[0]])
+
+                csv_writer.writerow(
+                    [
+                        _user,
+                        passSequence,
+                        hits_training,
+                        misses_training,
+                        hitRate_training,
+                        hits_auth_1,
+                        misses_auth_1,
+                        hitRate_auth_1,
+                        passHits_auth_1,
+                        passMisses_auth_1,
+                        passHitRate_auth_1,
+                        hits_auth_2,
+                        misses_auth_2,
+                        hitRate_auth_2,
+                        passHits_auth_2,
+                        passMisses_auth_2,
+                        passHitRate_auth_2,
+                        user[0],
+                    ]
+                )
             except Exception:
                 continue
 
@@ -75,7 +117,7 @@ def check_for_missing(dict_obj):
 
     print("Names missing: ")
     for value in arr:
-        if value[1].get("user") ==  None:
+        if value[1].get("user") == None:
             pprint(value[0])
 
     print("")
@@ -86,7 +128,7 @@ def check_for_duplicate(dict_obj):
     print("Session duplicates: ")
     for obj in list(dict_obj.items()):
         session_names = []
-        
+
         for item in list(obj[1].items()):
             if item[0] != "passSequence" and item[0] != "user":
                 if item[1].get("session") in session_names:
@@ -114,9 +156,14 @@ def add_g0_training(dict_obj):
             json.dump(dict_obj, target, indent=4)
 
 
-
 def separate_sessions():
-    session_names = ["g0-training", "g0-authentication", "g0-authentication2", "g1-authentication", "g1-training"]
+    session_names = [
+        "g0-training",
+        "g0-authentication",
+        "g0-authentication2",
+        "g1-authentication",
+        "g1-training",
+    ]
 
 
 if __name__ == "__main__":
