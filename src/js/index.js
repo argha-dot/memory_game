@@ -66,7 +66,7 @@ auth.onAuthStateChanged(user => {
                     passHits: game.passHits,
                     passMisses: game.passMisses,
                     passHitRate: game.passHitRate.toFixed(3),
-                    session: `g1-authentication`
+                    session: `g1-authentication2`
                     // avgReactionTime: avgReaction.toFixed(3),
                 };
                 console.log(user.uid, data);

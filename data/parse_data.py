@@ -14,7 +14,7 @@ def create_csv(dict_obj):
 
     session_names = ["g0-training", "g0-authentication", "g0-authentication2"]
 
-    with open("4-7-2021.csv", "w") as file:
+    with open("4-7-2021.csv", "w", newline="") as file:
         csv_writer = csv.writer(file)
 
         csv_writer.writerow(
