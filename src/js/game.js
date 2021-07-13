@@ -75,7 +75,7 @@ let misses = 0;
 let hitRate = 0;
 let prevHitRate = 0;
 let noteCounter = 0;
-let prevNoteCounter = 0;
+let prevNoteCounter = -1;
 let isGameOver;
 let reactionTimes = [];
 let avgReactionTime = 0;
@@ -97,16 +97,16 @@ let passHitRate = 0;
 
 const setPassSequence = (seq) => {
   passSequence = seq;
-  
+
   // for (let i = 0; i < numberOfLevels - 1; i++) {
-    //   sequence = [...sequence, ...lib.subBlockGen(passSequence)];
-    // }
-  
+  //   sequence = [...sequence, ...lib.subBlockGen(passSequence)];
+  // }
+
   authGen = lib.authSeqGen(passSequence);
   sequence = authGen.sequence;
   passIndexes = authGen.indexesOfPass;
 
-  
+
   console.log(sequence);
   console.log(passIndexes);
   // sequence = passSequence
@@ -328,8 +328,8 @@ function setup() {
           case 5:
             fretSounds.one.play();
             break;
-          
-            default:
+
+          default:
             fretSounds.one.play();
             break;
         }
@@ -461,6 +461,7 @@ function collisionCheck(fret, note) {
 
 function onPassOn() {
   onPassSeq = true;
+  console.log("onPassSeq: ", onPassSeq)
   if (passIndexes.length > 0) {
     passIndexes.shift();
   }
@@ -565,8 +566,9 @@ function play(delta) {
             if (onPassSeq) {
               passHits += 1;
               passHitRate = passHits / (passHits + passMisses);
-              // console.log(passHits, passMisses, passHitRate.toPrecision(3));
+              // console.log("something", passHits, passMisses, passHitRate.toPrecision(3));
             }
+            // console.log(hits, misses, hitRate.toPrecision(3));
             // This subtracts the time when the user presses the corresponding fret to
             // with the previously taken time
             reactionTimes.push(new Date().valueOf() - note.isInsideFretTime);
